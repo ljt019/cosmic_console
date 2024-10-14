@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export function Index() {
-  const [count, setCount] = useState(0);
-
   return (
     <div className="h-screen flex flex-col justify-center items-center">
-      <Button onClick={() => setCount(count + 1)}>Click me!</Button>
-      {count}
+      <Button onClick={() => invoke("open_window_on_secondary_monitor")}>
+        Click me!
+      </Button>
+      Open New Window on second monitor
     </div>
   );
 }
