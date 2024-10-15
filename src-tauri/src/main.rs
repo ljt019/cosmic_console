@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{AppHandle, Asset, Manager, Monitor, Window, WindowBuilder, WindowUrl};
+use tauri::{AppHandle, Manager, Monitor, Window, WindowBuilder, WindowUrl};
 
 fn get_primary_monitor(window: Window) -> Result<Monitor, String> {
     // Retrieve available monitors
@@ -49,7 +49,7 @@ fn get_secondary_monitor(window: Window, primary_monitor: Monitor) -> Result<Mon
 
 // Tauri command to open a fullscreen window on the second monitor
 #[tauri::command]
-async fn open_window_on_secondary_monitor(app: AppHandle) -> Result<(), String> {
+async fn open_window_on_secondary_monitor(app: AppHandle, path: String) -> Result<(), String> {
     // Retrieve the primary window
     let primary_window = app
         .get_window("main")
@@ -69,7 +69,7 @@ async fn open_window_on_secondary_monitor(app: AppHandle) -> Result<(), String> 
     WindowBuilder::new(
         &app,
         "secondary_fullscreen_window", // Unique label for the new window
-        WindowUrl::App("index.html#/movie".into()), // URL or path to your HTML content
+        WindowUrl::App(format!("index.html#{}", path).into()), // URL or path to your HTML content
     )
     .title("Fullscreen Secondary Window") // Optional: Set window title
     .position(position.x as f64, position.y as f64) // Position on the secondary monitor
@@ -85,32 +85,85 @@ async fn open_window_on_secondary_monitor(app: AppHandle) -> Result<(), String> 
 }
 
 #[tauri::command]
+async fn open_movie_window(app: AppHandle, relative_path: String) -> Result<(), String> {
+    // Retrieve the primary window
+    let primary_window = app
+        .get_window("main")
+        .ok_or("Primary window with label 'main' not found.")?;
+
+    // Get the primary monitor
+    let primary_monitor = get_primary_monitor(primary_window.clone())?;
+
+    // Get the secondary monitor
+    let secondary_monitor = get_secondary_monitor(primary_window.clone(), primary_monitor)?;
+
+    // Retrieve the position and size of the secondary monitor
+    let position = secondary_monitor.position();
+    let size = secondary_monitor.size();
+
+    // URL encode the path to safely include it as a query parameter
+    let encoded_path = &relative_path;
+
+    // Create a new fullscreen window on the secondary monitor with the /movie route and path query parameter
+    WindowBuilder::new(
+        &app,
+        "secondary_movie_window", // Unique label for the new window
+        WindowUrl::App(format!("index.html#/movie?path={}", encoded_path).into()), // Navigate to /movie with path
+    )
+    .title("Fullscreen Movie Window") // Optional: Set window title
+    .position(position.x as f64, position.y as f64) // Position on the secondary monitor
+    .inner_size(size.width as f64, size.height as f64) // Size matching the monitor
+    .resizable(false) // Disable window resizing
+    .decorations(false) // Hide window decorations (title bar, etc.)
+    .build()
+    .map_err(|e| format!("Failed to create movie window: {}", e))?;
+
+    println!("Movie window successfully created on the secondary monitor.");
+
+    Ok(())
+}
+
+#[tauri::command]
 fn get_tauri_asset_path(
     app_handle: tauri::AppHandle,
     relative_path: String,
 ) -> Result<String, String> {
-    // Get the file path using the app's asset_resolver
-    let asset_path = app_handle.asset_resolver().get(relative_path);
+    // Get the resource directory
+    let resource_path =
+        tauri::api::path::resource_dir(&app_handle.package_info(), &app_handle.env())
+            .ok_or_else(|| "Failed to get resource directory".to_string())?;
 
-    match asset_path {
-        Some(asset_path) => {
-            // Convert the asset path to a string
-            let asset_path_str = asset_path.to_string_lossy().into_owned();
-            Ok(asset_path_str)
-        }
-        None => {
-            println!("Asset path not found.");
-            Err("Asset path not found.".to_string())
-        }
-    }
+    // Construct the full path to the asset
+    let asset_path = resource_path.join("assets").join(relative_path);
+
+    Ok(asset_path.to_string_lossy().to_string())
 }
 
 fn main() {
     tauri::Builder::default()
+        .setup(|app| {
+            let main_window = app.get_window("main").unwrap();
+
+            // Perform initialization asynchronously
+            tauri::async_runtime::spawn(async move {
+                // Simulate initialization (replace this with your actual initialization code)
+                println!("Initializing...");
+                std::thread::sleep(std::time::Duration::from_secs(5)); // Simulate a delay
+                println!("Done initializing.");
+
+                // After initialization, load 'index.html' in the main window
+                main_window
+                    .eval("window.location.replace('index.html');")
+                    .unwrap();
+            });
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             open_window_on_secondary_monitor,
-            get_tauri_asset_path
+            get_tauri_asset_path,
+            open_movie_window
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("failed to run app");
 }
