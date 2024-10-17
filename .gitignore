@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 *.mp4
+
+# Don't include Stellarium assets
+src-tauri/assets/Stellarium/*

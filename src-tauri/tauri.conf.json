@@ -14,8 +14,15 @@
     "allowlist": {
       "all": false,
       "shell": {
-        "all": false,
-        "open": true
+        "all": true,
+        "open": true,
+        "sidecar": true,
+        "scope": [
+          {
+            "name": "assets/Stellarium/stellarium",
+            "sidecar": true
+          }
+        ]
       },
       "window": {
         "all": true
@@ -57,7 +64,8 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": ["assets/movies/"]
+      "resources": ["assets/movies/**/*", "assets/Stellarium/**/*"],
+      "externalBin": ["assets/Stellarium/stellarium"]
     }
   }
 }

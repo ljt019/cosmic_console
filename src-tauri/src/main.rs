@@ -1,7 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{AppHandle, Manager, Monitor, Window, WindowBuilder, WindowUrl};
+use tauri::{
+    api::process::{Command, CommandEvent},
+    AppHandle, Manager, Monitor, Window, WindowBuilder, WindowUrl,
+};
 
 fn get_primary_monitor(window: Window) -> Result<Monitor, String> {
     // Retrieve available monitors
@@ -139,6 +142,33 @@ fn get_tauri_asset_path(
     Ok(asset_path.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn start_stellarium(app_handle: tauri::AppHandle) -> Result<(), String> {
+    println!("Starting Stellarium...");
+
+    // Get resources directory
+    let resource_dir =
+        tauri::api::path::resource_dir(&app_handle.package_info(), &app_handle.env())
+            .expect("Failed to get resource directory");
+
+    // The target directory reltaive to the resources directory
+    let target_dir: std::path::PathBuf =
+        "C:/Users/lthom/Projects/Software/iso/src-tauri/target/debug/assets/Stellarium".into();
+
+    // The full path to the target directory
+    let _current_dir = resource_dir.join(target_dir.clone());
+
+    println!("Current directory: {:?}", target_dir);
+
+    // Execute shell command to start Stellarium
+    Command::new("stellarium-x86_64-pc-windows-msvc")
+        .current_dir(target_dir)
+        .spawn()
+        .expect("Failed to start Stellarium");
+
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -162,7 +192,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             open_window_on_secondary_monitor,
             get_tauri_asset_path,
-            open_movie_window
+            open_movie_window,
+            start_stellarium
         ])
         .run(tauri::generate_context!())
         .expect("failed to run app");

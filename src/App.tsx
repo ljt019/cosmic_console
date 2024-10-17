@@ -1,6 +1,10 @@
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
-import Index from "./screens/index";
-import Movie from "./screens/movie";
+
+import Movies from "@/screens/movies";
+import Movie from "@/screens/movie-player";
+import Stellarium from "@/screens/stellarium";
+import OpenSpace from "@/screens/open-space";
+
 import { Button } from "./components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,9 +18,9 @@ interface RouteConfig {
 
 const routesConfig: RouteConfig[] = [
   {
-    name: "Home",
+    name: "Movies",
     path: "/",
-    screen: Index,
+    screen: Movies,
     sidebar: true,
   },
   {
@@ -25,10 +29,26 @@ const routesConfig: RouteConfig[] = [
     screen: Movie,
     sidebar: false,
   },
+  {
+    name: "Open Space",
+    path: "/open-space",
+    screen: OpenSpace,
+    sidebar: true,
+  },
+  {
+    name: "Stellarium",
+    path: "/stellarium",
+    screen: Stellarium,
+    sidebar: true,
+  },
 ];
 
 function SideBar() {
   const navigate = useNavigate();
+
+  const isCurrentRoute = (routePath: string) => {
+    return window.location.hash.includes(routePath);
+  };
 
   // Map over routes and create a sidebar with buttons for each route
   return (
@@ -38,7 +58,11 @@ function SideBar() {
           {route.path != "/movie" && (
             <Button
               onClick={() => navigate(route.path)}
-              className="block w-full text-left"
+              className={`block w-full text-left ${
+                isCurrentRoute(route.path)
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              }`}
             >
               {route.name}
             </Button>

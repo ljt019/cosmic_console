@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect } from "react";
 import { walkInOn } from "@/api/lights/walkInOn";
 
-export default function Index() {
+export default function Movies() {
   useEffect(() => {
     walkInOn();
   });
@@ -39,7 +39,7 @@ const movies = [
 
 function MovieButtons() {
   return (
-    <div className="">
+    <div className="flex">
       {movies.map((movie) => (
         <div className="mt-4">
           <MovieButton name={movie.name} path={movie.path} />
