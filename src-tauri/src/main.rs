@@ -165,7 +165,7 @@ fn start_stellarium(app_handle: tauri::AppHandle) -> Result<(), String> {
         .current_dir(current_dir.clone());
 
     if let Ok((mut rx, mut child)) = sidecar.spawn() {
-        println!("Stellarium process spawned successfully.");
+        println!("Stellarium process attempted to be spawned.");
 
         // Spawn an async task to handle the sidecar output
         tauri::async_runtime::spawn(async move {
