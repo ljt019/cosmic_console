@@ -152,21 +152,40 @@ fn start_stellarium(app_handle: tauri::AppHandle) -> Result<(), String> {
             .expect("Failed to get resource directory");
 
     // The target directory reltaive to the resources directory
-    let target_dir: std::path::PathBuf =
-        "C:/Users/lthom/Projects/Software/iso/src-tauri/target/debug/assets/Stellarium".into();
+    let target_dir: std::path::PathBuf = "assets\\Stellarium".into();
 
     // The full path to the target directory
-    let _current_dir = resource_dir.join(target_dir.clone());
+    let current_dir = resource_dir.join(target_dir);
 
-    println!("Current directory: {:?}", target_dir);
+    println!("Current directory: {:?}", current_dir);
 
-    // Execute shell command to start Stellarium
-    Command::new("stellarium-x86_64-pc-windows-msvc")
-        .current_dir(target_dir)
-        .spawn()
-        .expect("Failed to start Stellarium");
+    // Create a new sidecar command for Stellarium
+    let sidecar = Command::new_sidecar("stellarium")
+        .map_err(|e| format!("Failed to create sidecar command: {}", e))?
+        .current_dir(current_dir.clone());
 
-    Ok(())
+    if let Ok((mut rx, mut child)) = sidecar.spawn() {
+        println!("Stellarium process spawned successfully.");
+
+        // Spawn an async task to handle the sidecar output
+        tauri::async_runtime::spawn(async move {
+            while let Some(event) = rx.recv().await {
+                match event {
+                    CommandEvent::Stdout(line) => {
+                        println!("stdout: {}", line);
+                    }
+                    CommandEvent::Stderr(line) => {
+                        println!("stderr: {}", line);
+                    }
+                    _ => (),
+                }
+            }
+        });
+
+        Ok(()) // Successfully started the sidecar
+    } else {
+        Err("Failed to spawn Stellarium sidecar.".to_string()) // Handle error in spawning
+    }
 }
 
 fn main() {
