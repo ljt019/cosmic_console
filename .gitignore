@@ -26,4 +26,5 @@ dist-ssr
 *.mp4
 
 # Don't include Stellarium assets
-src-tauri/assets/Stellarium/*
+src-tauri/resources/Stellarium/*
+src-tauri/resources/OpenSpace/*

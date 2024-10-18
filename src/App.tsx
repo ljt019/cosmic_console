@@ -5,9 +5,11 @@ import Movie from "@/screens/movie-player";
 import Stellarium from "@/screens/stellarium";
 import OpenSpace from "@/screens/open-space";
 
-import { Button } from "./components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import { MainSidebar } from "@/components/main-sidebar";
+
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 interface RouteConfig {
   name: string;
@@ -43,36 +45,6 @@ const routesConfig: RouteConfig[] = [
   },
 ];
 
-function SideBar() {
-  const navigate = useNavigate();
-
-  const isCurrentRoute = (routePath: string) => {
-    return window.location.hash.includes(routePath);
-  };
-
-  // Map over routes and create a sidebar with buttons for each route
-  return (
-    <div className="w-1/6 h-screen bg-gray-800 text-white">
-      {routesConfig.map((route) => (
-        <div className="p-4">
-          {route.path != "/movie" && (
-            <Button
-              onClick={() => navigate(route.path)}
-              className={`block w-full text-left ${
-                isCurrentRoute(route.path)
-                  ? "text-foreground"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {route.name}
-            </Button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function Layout({
   children,
   renderSidebar,
@@ -81,9 +53,25 @@ function Layout({
   renderSidebar: boolean;
 }) {
   return (
-    <div className="flex">
-      {renderSidebar && <SideBar />}
-      <div className="flex-1 p-4">{children}</div>
+    <div className="h-screen overflow-hidden">
+      {renderSidebar ? (
+        <>
+          <SidebarProvider
+            style={
+              {
+                "--sidebar-width": "19rem",
+              } as React.CSSProperties
+            }
+          >
+            <MainSidebar />
+            <SidebarInset>
+              <div className="mt-[1rem]">{children}</div>
+            </SidebarInset>
+          </SidebarProvider>
+        </>
+      ) : (
+        <div className="mt-[1rem]">{children}</div>
+      )}
     </div>
   );
 }

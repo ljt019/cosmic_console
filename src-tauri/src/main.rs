@@ -1,10 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{
-    api::process::{Command, CommandEvent},
-    AppHandle, Manager, Monitor, Window, WindowBuilder, WindowUrl,
-};
+use tauri::{api::process::Command, AppHandle, Manager, Monitor, Window, WindowBuilder, WindowUrl};
 
 fn get_primary_monitor(window: Window) -> Result<Monitor, String> {
     // Retrieve available monitors
@@ -143,49 +140,25 @@ fn get_tauri_asset_path(
 }
 
 #[tauri::command]
-fn start_stellarium(app_handle: tauri::AppHandle) -> Result<(), String> {
+fn start_stellarium() -> Result<(), String> {
     println!("Starting Stellarium...");
 
-    // Get resources directory
-    let resource_dir =
-        tauri::api::path::resource_dir(&app_handle.package_info(), &app_handle.env())
-            .expect("Failed to get resource directory");
+    Command::new("resources/Stellarium/stellarium-x86_64-pc-windows-msvc.exe")
+        .spawn()
+        .expect("Failed to start Stellarium");
 
-    // The target directory reltaive to the resources directory
-    let target_dir: std::path::PathBuf = "assets\\Stellarium".into();
+    Ok(())
+}
 
-    // The full path to the target directory
-    let current_dir = resource_dir.join(target_dir);
+#[tauri::command]
+fn start_open_space() -> Result<(), String> {
+    println!("Starting OpenSpace...");
 
-    println!("Current directory: {:?}", current_dir);
+    Command::new("resources/OpenSpace/bin/OpenSpace.exe")
+        .spawn()
+        .expect("Failed to start OpenSpace");
 
-    // Create a new sidecar command for Stellarium
-    let sidecar = Command::new_sidecar("stellarium")
-        .map_err(|e| format!("Failed to create sidecar command: {}", e))?
-        .current_dir(current_dir.clone());
-
-    if let Ok((mut rx, mut child)) = sidecar.spawn() {
-        println!("Stellarium process attempted to be spawned.");
-
-        // Spawn an async task to handle the sidecar output
-        tauri::async_runtime::spawn(async move {
-            while let Some(event) = rx.recv().await {
-                match event {
-                    CommandEvent::Stdout(line) => {
-                        println!("stdout: {}", line);
-                    }
-                    CommandEvent::Stderr(line) => {
-                        println!("stderr: {}", line);
-                    }
-                    _ => (),
-                }
-            }
-        });
-
-        Ok(()) // Successfully started the sidecar
-    } else {
-        Err("Failed to spawn Stellarium sidecar.".to_string()) // Handle error in spawning
-    }
+    Ok(())
 }
 
 fn main() {
@@ -197,7 +170,7 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 // Simulate initialization (replace this with your actual initialization code)
                 println!("Initializing...");
-                std::thread::sleep(std::time::Duration::from_secs(5)); // Simulate a delay
+                std::thread::sleep(std::time::Duration::from_secs(2)); // Simulate a delay
                 println!("Done initializing.");
 
                 // After initialization, load 'index.html' in the main window
@@ -212,7 +185,8 @@ fn main() {
             open_window_on_secondary_monitor,
             get_tauri_asset_path,
             open_movie_window,
-            start_stellarium
+            start_stellarium,
+            start_open_space,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run app");
